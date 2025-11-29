@@ -25,6 +25,7 @@ export const TEMPLATES: StatementTemplate[] = [
         type: STATEMENT_TYPES.SIMPLE,
         difficulty: 1,
         text: "A carnivore did it",
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             // True if AT LEAST ONE culprit is a carnivore
             return Array.from(world.culprits).some(id => ANIMALS[id].diet === 'carnivore');
@@ -35,6 +36,7 @@ export const TEMPLATES: StatementTemplate[] = [
         type: STATEMENT_TYPES.SIMPLE,
         difficulty: 1,
         text: "A herbivore did it",
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             return Array.from(world.culprits).some(id => ANIMALS[id].diet === 'herbivore');
         }
@@ -53,6 +55,7 @@ export const TEMPLATES: StatementTemplate[] = [
         type: STATEMENT_TYPES.SIMPLE,
         difficulty: 1,
         text: "I did it",
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             return world.culprits.has(speakerId);
         }
@@ -64,6 +67,7 @@ export const TEMPLATES: StatementTemplate[] = [
         type: STATEMENT_TYPES.COMPARATIVE,
         difficulty: 2,
         text: "Someone taller than me did it",
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             const myHeight = ANIMALS[speakerId].height;
             return Array.from(world.culprits).some(id => ANIMALS[id].height > myHeight);
@@ -75,6 +79,7 @@ export const TEMPLATES: StatementTemplate[] = [
         difficulty: 2,
         requiresTarget: true,
         text: (target: Animal) => `Someone shorter than ${target.name} did it`,
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             if (!context.targetId) return false;
             const targetHeight = ANIMALS[context.targetId].height;
@@ -104,16 +109,6 @@ export const TEMPLATES: StatementTemplate[] = [
             if (!context.targetId) return false;
             return !world.liars.has(context.targetId);
         }
-    },
-    {
-        id: 'i_am_lying',
-        type: STATEMENT_TYPES.REFERENTIAL,
-        difficulty: 3,
-        text: "I am lying",
-        evaluate: (speakerId: number, world: World, context: StatementContext) => {
-            return false; // Paradox
-        },
-        disabled: true
     },
 
     // --- REFERENTIAL (AND/OR) ---
@@ -149,6 +144,7 @@ export const TEMPLATES: StatementTemplate[] = [
         difficulty: 1,
         requiresTarget: true,
         text: (target: Animal) => `${target.name} did it`,
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             if (!context.targetId) return false;
             return world.culprits.has(context.targetId);
@@ -172,6 +168,7 @@ export const TEMPLATES: StatementTemplate[] = [
         requiresTarget: true,
         requiresSecondTarget: true,
         text: (t1: Animal, t2: Animal) => `${t1.name} and ${t2.name} did it`,
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             if (!context.targetId || !context.secondTargetId) return false;
             return world.culprits.has(context.targetId) && world.culprits.has(context.secondTargetId);
@@ -184,6 +181,7 @@ export const TEMPLATES: StatementTemplate[] = [
         requiresTarget: true,
         requiresSecondTarget: true,
         text: (t1: Animal, t2: Animal) => `${t1.name} or ${t2.name} did it`,
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             if (!context.targetId || !context.secondTargetId) return false;
             return world.culprits.has(context.targetId) || world.culprits.has(context.secondTargetId);
@@ -196,6 +194,7 @@ export const TEMPLATES: StatementTemplate[] = [
         type: STATEMENT_TYPES.POSITIONAL,
         difficulty: 2,
         text: "Someone next to me did it",
+        isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             const neighbors = getNeighbors(speakerId, context.allSuspectIds);
             return neighbors.some(nId => world.culprits.has(nId));
@@ -212,19 +211,4 @@ export const TEMPLATES: StatementTemplate[] = [
         }
     },
 
-    // --- CONDITIONAL ---
-    {
-        id: 'if_target_guilty_then_target2_lying',
-        type: STATEMENT_TYPES.CONDITIONAL,
-        difficulty: 5,
-        requiresTarget: true,
-        requiresSecondTarget: true,
-        text: (t1: Animal, t2: Animal) => `If ${t1.name} did it, then ${t2.name} is lying`,
-        evaluate: (speakerId: number, world: World, context: StatementContext) => {
-            if (!context.targetId || !context.secondTargetId) return false;
-            const condition = world.culprits.has(context.targetId);
-            const consequence = world.liars.has(context.secondTargetId);
-            return !condition || consequence;
-        }
-    }
 ];

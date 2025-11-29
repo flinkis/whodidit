@@ -2,7 +2,7 @@ export interface Animal {
     id: number;
     name: string;
     height: number;
-    diet: 'carnivore' | 'herbivore' | 'omnivore';
+    diet: 'carnivore' | 'herbivore';
     image: string;
     color: string;
 }
@@ -43,6 +43,7 @@ export interface StatementTemplate {
     requiresTarget?: boolean;
     requiresSecondTarget?: boolean;
     disabled?: boolean;
+    isAccusation?: boolean;
     evaluate: (speakerId: number, world: World, context: StatementContext) => boolean;
 }
 
@@ -53,6 +54,7 @@ export interface GeneratedStatement {
         secondTargetId?: number;
     };
     text: string;
+    isAccusation?: boolean;
 }
 
 export interface GameData {

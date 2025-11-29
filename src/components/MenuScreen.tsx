@@ -1,24 +1,18 @@
 import React from 'react';
 import styles from './MenuScreen.module.css';
 import { GameConfig } from '../types';
+import { LEVELS } from '../data/levels';
 
 interface MenuScreenProps {
     onStartGame: (config: GameConfig) => void;
 }
 
 const MenuScreen: React.FC<MenuScreenProps> = ({ onStartGame }) => {
-    const startOpenCase = (difficulty: 'easy' | 'medium' | 'hard') => {
-        const config: GameConfig = {
-            mode: 'open',
-            suspectCount: difficulty === 'easy' ? 3 : (difficulty === 'medium' ? 5 : 7),
-            culpritCount: difficulty === 'easy' ? 1 : (difficulty === 'medium' ? 1 : 2),
-            difficulty: difficulty === 'easy' ? 1 : (difficulty === 'medium' ? 3 : 5),
-            constraints: {
-                minLiars: difficulty === 'easy' ? 0 : 1,
-                maxLiars: difficulty === 'easy' ? 1 : 3
-            }
-        };
-        onStartGame(config);
+    const startOpenCase = (level: string) => {
+        const config = LEVELS[level];
+        if (config) {
+            onStartGame(config);
+        }
     };
 
     return (
@@ -38,21 +32,21 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onStartGame }) => {
                     <div className={styles.difficultyButtons}>
                         <button
                             className={`${styles.diffBtn} ${styles.easy}`}
-                            onClick={() => startOpenCase('easy')}
+                            onClick={() => startOpenCase('level1')}
                         >
-                            Beginner (3 Suspects)
+                            Introductory (3 Suspects)
                         </button>
                         <button
                             className={`${styles.diffBtn} ${styles.medium}`}
-                            onClick={() => startOpenCase('medium')}
+                            onClick={() => startOpenCase('level3')}
                         >
                             Intermediate (5 Suspects)
                         </button>
                         <button
-                            className={`${styles.diffBtn} ${styles.hard}`}
-                            onClick={() => startOpenCase('hard')}
+                            className={`${styles.diffBtn} ${styles.medium}`}
+                            onClick={() => startOpenCase('level7')}
                         >
-                            Expert (7 Suspects)
+                            Advanced (7 Suspects)
                         </button>
                     </div>
                 </div>

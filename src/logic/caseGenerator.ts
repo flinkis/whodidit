@@ -21,8 +21,8 @@ export const generateCase = (config: GameConfig): GameData => {
     const trueCulprits = new Set(shuffledSuspects.slice(0, culpritCount));
 
     // Randomly pick liars based on constraints
-    const minLiars = constraints.minLiars || 0;
-    const maxLiars = constraints.maxLiars || suspectCount;
+    const minLiars = constraints.minLiars ?? 0;
+    const maxLiars = constraints.maxLiars ?? suspectCount;
     const numLiars = Math.floor(Math.random() * (maxLiars - minLiars + 1)) + minLiars;
 
     const shuffledForLiars = [...suspectIds].sort(() => 0.5 - Math.random());
@@ -41,18 +41,38 @@ export const generateCase = (config: GameConfig): GameData => {
         attempts++;
         const statements: Record<number, GeneratedStatement> = {};
         const context: StatementContext = { allSuspectIds: suspectIds };
+        const usedStatements = new Set<string>();
+        let hasAccusation = false;
 
         for (const suspectId of suspectIds) {
             const isLiar = trueWorld.liars.has(suspectId);
 
-            const validStatement = generateValidStatementForSuspect(suspectId, isLiar, trueWorld, context, difficulty);
+            const validStatement = generateValidStatementForSuspect(
+                suspectId,
+                isLiar,
+                trueWorld,
+                context,
+                difficulty,
+                usedStatements
+            );
+
             if (!validStatement) {
                 break;
             }
+
             statements[suspectId] = validStatement;
+            usedStatements.add(validStatement.text);
+
+            // Check if this statement helps solve the case (is an accusation or direct evidence)
+            if (validStatement.isAccusation) {
+                hasAccusation = true;
+            }
         }
 
         if (Object.keys(statements).length !== suspectCount) continue;
+
+        // Constraint: Must have at least one accusation/clue that points to someone
+        if (!hasAccusation) continue;
 
         // 4. Verify Uniqueness
         const solutions = solveCase(statements, suspectIds, culpritCount, constraints);
@@ -78,7 +98,8 @@ const generateValidStatementForSuspect = (
     mustBeFalse: boolean,
     world: World,
     context: StatementContext,
-    difficulty: number
+    difficulty: number,
+    usedStatements: Set<string>
 ): GeneratedStatement | null => {
     const allowedTemplates = TEMPLATES.filter(t => !t.disabled && t.difficulty <= difficulty + 1);
     const shuffledTemplates = allowedTemplates.sort(() => 0.5 - Math.random());
@@ -117,11 +138,14 @@ const generateValidStatementForSuspect = (
                     )
                     : template.text;
 
-                return {
-                    templateId: template.id,
-                    targets: targets,
-                    text: text
-                };
+                if (!usedStatements.has(text)) {
+                    return {
+                        templateId: template.id,
+                        targets: targets,
+                        text: text,
+                        isAccusation: template.isAccusation
+                    };
+                }
             }
         }
     }
