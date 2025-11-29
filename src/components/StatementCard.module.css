@@ -1,0 +1,70 @@
+.card {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 220px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-color: #bbb;
+}
+
+.header {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+}
+
+.suspectName {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.text {
+    margin: 0;
+    font-size: 1rem;
+    color: #333;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+.highlight {
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: #000;
+}
+
+.markedFalse {
+    opacity: 0.5;
+    background: #f0f0f0;
+    text-decoration: line-through;
+    border-color: #ccc;
+}
+
+.markedFalse::after {
+    content: "FALSE";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    color: red;
+    font-weight: 900;
+    font-size: 2rem;
+    border: 4px solid red;
+    padding: 4px 12px;
+    border-radius: 8px;
+    opacity: 0.8;
+}

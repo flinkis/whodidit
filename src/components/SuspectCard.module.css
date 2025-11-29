@@ -1,0 +1,121 @@
+.card {
+    width: 180px;
+    height: 260px;
+    background: #fff;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 4px solid var(--suspect-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+/* States */
+.culprit {
+    box-shadow: 0 0 0 4px #ff3366, 0 8px 16px rgba(255, 51, 102, 0.4);
+    transform: scale(1.05);
+}
+
+.innocent {
+    opacity: 0.6;
+    filter: grayscale(100%);
+    transform: scale(0.95);
+}
+
+.innerContent {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #f5f5f5;
+}
+
+.imageContainer {
+    flex: 1;
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.suspectImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.infoContainer {
+    padding: 12px 8px;
+    background: white;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.name {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 600;
+}
+
+.statDivider {
+    color: #ccc;
+}
+
+.statItem {
+    text-transform: uppercase;
+}
+
+.carnivore {
+    color: #E91E63;
+}
+
+.herbivore {
+    color: #4CAF50;
+}
+
+.omnivore {
+    color: #FF9800;
+}
+
+.badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 900;
+    padding: 8px 16px;
+    border: 4px solid white;
+    border-radius: 8px;
+    z-index: 20;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    white-space: nowrap;
+}
