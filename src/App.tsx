@@ -1,28 +1,29 @@
-import { useState } from 'react'
+import { GameProvider, useGame } from './context/GameContext'
 import MenuScreen from './components/MenuScreen'
 import GameScreen from './components/GameScreen'
-import { GameConfig } from './types'
 import './App.css'
 
-function App() {
-    const [screen, setScreen] = useState<'menu' | 'game'>('menu');
-    const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-
-    const startGame = (config: GameConfig) => {
-        setGameConfig(config);
-        setScreen('game');
-    };
-
-    const returnToMenu = () => {
-        setScreen('menu');
-        setGameConfig(null);
-    };
+const AppContent = () => {
+    const { gameState, currentConfig, exitToMenu } = useGame();
 
     return (
         <div className="app-container">
-            {screen === 'menu' && <MenuScreen onStartGame={startGame} />}
-            {screen === 'game' && gameConfig && <GameScreen config={gameConfig} onExit={returnToMenu} />}
+            {gameState.screen === 'menu' && <MenuScreen />}
+            {gameState.screen === 'game' && currentConfig && (
+                <GameScreen
+                    config={currentConfig}
+                    onExit={exitToMenu}
+                />
+            )}
         </div>
+    );
+};
+
+function App() {
+    return (
+        <GameProvider>
+            <AppContent />
+        </GameProvider>
     )
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { generateCase } from '../logic/caseGenerator';
 import { ANIMALS } from '../data/animals';
 import { CASE_NAMES } from '../data/caseNames';
@@ -7,9 +7,12 @@ import StatementCard from './StatementCard';
 import ResultsModal from './ResultsModal';
 import GameHeader from './GameHeader';
 import SubmitButton from './SubmitButton';
+import Toast from './Toast';
 import MobileActionMenu from './MobileActionMenu';
 import styles from './GameScreen.module.css';
 import { GameConfig, GameData, Result } from '../types';
+import { useGame } from '../context/GameContext';
+import CampaignWinModal from './CampaignWinModal';
 
 interface GameScreenProps {
     config: GameConfig;
@@ -17,6 +20,7 @@ interface GameScreenProps {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
+    const { gameState, advanceCampaign, timeLeft, stopTimer, startTimer, stars, decrementStars } = useGame();
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -27,21 +31,24 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
     const [selectedCulprits, setSelectedCulprits] = useState<Set<number>>(new Set());
     const [innocentSuspects, setInnocentSuspects] = useState<Set<number>>(new Set());
     const [markedStatements, setMarkedStatements] = useState<Set<number>>(new Set());
-    const [startTime, setStartTime] = useState(Date.now());
-    const [timeLeft, setTimeLeft] = useState(600);
+    // Removed local startTime and timeLeft
     const [result, setResult] = useState<Result | null>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [flippedSuspectIds, setFlippedSuspectIds] = useState<Set<number>>(new Set());
     const [menuSuspectId, setMenuSuspectId] = useState<number | null>(null);
     const [topCardId, setTopCardId] = useState<number | null>(null);
 
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    // Toast State
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
 
     // Initialize Game
     useEffect(() => {
         startNewCase();
+        // Ensure timer is running when component mounts/updates
+        startTimer();
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
+            // Optional: stop timer on unmount if needed, but context handles exitToMenu
         };
     }, [config]);
 
@@ -91,28 +98,17 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         return { x: finalRadius, y: finalRadius };
     };
 
-    // Timer Logic
+    // Watch for timeout from context
     useEffect(() => {
-        if (!loading && !result && timeLeft > 0) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        if (timerRef.current) clearInterval(timerRef.current);
-                        setResult({
-                            success: false,
-                            solution: gameData!.solution,
-                            reason: 'timeout'
-                        });
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+        if (timeLeft === 0 && !result && !loading) {
+            setResult({
+                success: false,
+                solution: gameData?.solution || { culprits: new Set(), liars: new Set() },
+                reason: 'timeout'
+            });
+            stopTimer();
         }
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [loading, result, gameData]);
+    }, [timeLeft, result, loading, gameData, stopTimer]);
 
     const startNewCase = () => {
         setLoading(true);
@@ -120,6 +116,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         setSelectedCulprits(new Set());
         setInnocentSuspects(new Set());
         setMarkedStatements(new Set());
+        setFlippedSuspectIds(new Set());
         setError(null);
 
         // Generate new case details
@@ -130,9 +127,9 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
             try {
                 const newCase = generateCase(config);
                 setGameData(newCase);
-                setStartTime(Date.now());
-                setTimeLeft(600);
                 setLoading(false);
+                // Timer is managed by context, just ensure it's running
+                startTimer();
             } catch (err) {
                 console.error("Failed to generate case:", err);
                 setError("Failed to generate a valid case. Please try again.");
@@ -147,12 +144,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const getStarRating = (remainingTime: number) => {
-        const elapsed = 600 - remainingTime;
-        if (elapsed < 60) return 3;
-        if (elapsed < 120) return 2;
-        return 1;
-    };
+
 
     const handleSuspectClick = (id: number) => {
         if (result) return;
@@ -163,6 +155,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         if (newSelected.has(id)) {
             newSelected.delete(id);
         } else {
+            if (newSelected.size >= config.culpritCount) {
+                setToastMessage(`You can only select ${config.culpritCount} culprit(s).`);
+                setShowToast(true);
+                return;
+            }
             newSelected.add(id);
             newInnocent.delete(id);
         }
@@ -211,10 +208,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                 handleSuspectClick(menuSuspectId);
                 break;
             case 'innocent':
-                // Custom logic to toggle innocent without affecting others if needed, 
-                // but handleSuspectRightClick toggles innocent/selected correctly.
-                // We need to simulate the event or extract logic.
-                // Extracting logic:
                 const newInnocent = new Set(innocentSuspects);
                 const newSelected = new Set(selectedCulprits);
                 if (newInnocent.has(menuSuspectId)) {
@@ -249,12 +242,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         if (!gameData) return;
 
         if (selectedCulprits.size !== config.culpritCount) {
-            alert(`Please select exactly ${config.culpritCount} culprit(s).`);
+            setToastMessage(`Please select exactly ${config.culpritCount} culprit(s).`);
+            setShowToast(true);
             return;
         }
 
         const trueCulprits = gameData.solution.culprits;
         let isCorrect = true;
+
+        setFlippedSuspectIds(new Set());
 
         if (selectedCulprits.size !== trueCulprits.size) isCorrect = false;
         for (const id of selectedCulprits) {
@@ -262,19 +258,41 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         }
 
         if (isCorrect) {
-            const stars = getStarRating(timeLeft);
             setResult({
                 success: true,
-                stars,
-                time: formatTime(600 - timeLeft),
+                stars, // Use stars from context
+                time: formatTime(gameState.mode === 'open' ? 300 - timeLeft : 900 - timeLeft),
                 solution: gameData.solution
             });
+            stopTimer();
         } else {
-            setResult({
-                success: false,
-                solution: gameData.solution
-            });
+            decrementStars();
+            // Check if this was the last star (state update is async, so check current value - 1)
+            if (stars <= 1) {
+                setResult({
+                    success: false,
+                    solution: gameData.solution,
+                    reason: 'stars' // New reason for running out of stars
+                });
+                stopTimer();
+            } else {
+                setToastMessage("Incorrect! You lost a star.");
+                setShowToast(true);
+            }
         }
+    };
+
+    const handleToastClose = useCallback(() => {
+        setShowToast(false);
+    }, []);
+
+    const handleNext = () => {
+        if (gameState.mode === 'campaign') {
+            advanceCampaign();
+        } else {
+            startNewCase();
+        }
+        // Timer will be resumed by useEffect or advanceCampaign logic
     };
 
     if (loading) {
@@ -304,12 +322,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
             <GameHeader
                 caseNumber={caseNumber}
                 caseName={caseName}
-                suspectCount={config.suspectCount}
-                culpritCount={config.culpritCount}
-                minLiars={config.constraints.minLiars ?? 0}
-                maxLiars={config.constraints.maxLiars ?? 0}
-                timeLeft={timeLeft}
-                stars={getStarRating(timeLeft)}
             />
 
             {/* Main Game Area */}
@@ -391,10 +403,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
             <ResultsModal
                 result={result}
-                onNext={startNewCase}
+                onNext={handleNext}
                 onRetry={() => setResult(null)}
                 onExit={onExit}
             />
+
+            {gameState.isCampaignComplete && (
+                <CampaignWinModal onExit={onExit} />
+            )}
 
             {menuSuspectId !== null && gameData && (
                 <MobileActionMenu
@@ -410,6 +426,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                     isLie={markedStatements.has(menuSuspectId)}
                 />
             )}
+
+            <Toast
+                message={toastMessage}
+                isVisible={showToast}
+                onClose={handleToastClose}
+            />
         </div>
     );
 };

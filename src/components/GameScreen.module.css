@@ -56,26 +56,6 @@
     font-weight: 600;
 }
 
-.timerContainer {
-    text-align: right;
-}
-
-.timerValue {
-    font-size: 2rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: #2c3e50;
-}
-
-.stars {
-    color: #f1c40f;
-    font-size: 1.2rem;
-}
-
-.starEmpty {
-    color: #bdc3c7;
-}
-
 .circleContainer {
     position: relative;
     width: 100%;
@@ -117,11 +97,6 @@
 .centerActions {
     position: absolute;
     overflow: hidden;
-}
-
-.progressBar {
-    height: 100%;
-    background: #2ecc71;
 }
 
 @media (max-width: 768px) {

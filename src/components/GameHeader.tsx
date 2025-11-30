@@ -1,27 +1,25 @@
 import React from 'react';
 import styles from './GameHeader.module.css';
 
+import { useGame } from '../context/GameContext';
+
 interface GameHeaderProps {
     caseNumber: number;
     caseName: string;
-    suspectCount: number;
-    culpritCount: number;
-    minLiars: number;
-    maxLiars: number;
-    timeLeft: number;
-    stars: number;
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
     caseNumber,
-    caseName,
-    suspectCount,
-    culpritCount,
-    minLiars,
-    maxLiars,
-    timeLeft,
-    stars
+    caseName
 }) => {
+    const { currentConfig, timeLeft, gameState, stars } = useGame();
+
+    if (!currentConfig) return null;
+
+    const { suspectCount, culpritCount, constraints } = currentConfig;
+    const { minLiars = 0, maxLiars = 0 } = constraints;
+    const campaignLevel = gameState.mode === 'campaign' ? gameState.campaignProgress : undefined;
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -54,7 +52,9 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 
             {/* Top Row: Case Name (3/8) */}
             <div className={styles.caseNameSection}>
-                <div className={styles.caseNumber}>Case #{caseNumber}: {caseName}</div>
+                <div className={styles.caseNumber}>
+                    {campaignLevel ? `Level ${campaignLevel} - ` : ''}Case #{caseNumber}: {caseName}
+                </div>
             </div>
 
             {/* Middle Row: Pills (6/8) */}

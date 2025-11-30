@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './ResultsModal.module.css';
 import { Result } from '../types';
+import { useGame } from '../context/GameContext';
 
 interface ResultsModalProps {
     result: Result | null;
@@ -10,6 +11,9 @@ interface ResultsModalProps {
 }
 
 const ResultsModal: React.FC<ResultsModalProps> = ({ result, onNext, onRetry, onExit }) => {
+    const { gameState } = useGame();
+    const isCampaign = gameState.mode === 'campaign';
+
     if (!result) return null;
 
     return (
@@ -38,6 +42,8 @@ const ResultsModal: React.FC<ResultsModalProps> = ({ result, onNext, onRetry, on
                         <>
                             {result.reason === 'timeout' ? (
                                 <p>Time's up! The case has gone cold.</p>
+                            ) : result.reason === 'stars' ? (
+                                <p>You've lost all your stars! The chief has taken you off the case.</p>
                             ) : (
                                 <p>That wasn't quite right. Review the clues and try again!</p>
                             )}
@@ -47,7 +53,9 @@ const ResultsModal: React.FC<ResultsModalProps> = ({ result, onNext, onRetry, on
 
                 <div className={styles.actions}>
                     {result.success ? (
-                        <button className={styles.primaryBtn} onClick={onNext}>Next Case</button>
+                        <button className={styles.primaryBtn} onClick={onNext}>
+                            {isCampaign ? 'Next Level' : 'Next Case'}
+                        </button>
                     ) : (
                         <button className={styles.primaryBtn} onClick={onRetry}>Continue Investigation</button>
                     )}

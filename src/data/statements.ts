@@ -9,7 +9,7 @@ const getNeighbors = (suspectId: number, allSuspectIds: number[]): number[] => {
     return [allSuspectIds[leftIndex], allSuspectIds[rightIndex]];
 };
 
-export const STATEMENT_TYPES = {
+const STATEMENT_TYPES = {
     SIMPLE: 'simple',
     COMPARATIVE: 'comparative',
     REFERENTIAL: 'referential',
@@ -180,7 +180,7 @@ export const TEMPLATES: StatementTemplate[] = [
         difficulty: 3,
         requiresTarget: true,
         requiresSecondTarget: true,
-        text: (t1: Animal, t2: Animal) => `${t1.name} or ${t2.name} did it`,
+        text: (t1: Animal, t2: Animal) => `${t1.name} or ${t2.name} did it (or both)`,
         isAccusation: true,
         evaluate: (speakerId: number, world: World, context: StatementContext) => {
             if (!context.targetId || !context.secondTargetId) return false;

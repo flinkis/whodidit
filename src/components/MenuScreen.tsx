@@ -1,24 +1,14 @@
 import React from 'react';
 import styles from './MenuScreen.module.css';
-import { GameConfig } from '../types';
-import { LEVELS } from '../data/levels';
 
-interface MenuScreenProps {
-    onStartGame: (config: GameConfig) => void;
-}
+import { useGame } from '../context/GameContext';
 
-const MenuScreen: React.FC<MenuScreenProps> = ({ onStartGame }) => {
-    const startOpenCase = (level: string) => {
-        const config = LEVELS[level];
-        if (config) {
-            onStartGame(config);
-        }
-    };
+const MenuScreen: React.FC = () => {
+    const { startOpenCase, startCampaign } = useGame();
 
     return (
         <div className={styles.menuContainer}>
             <header className={styles.header}>
-                <div className={styles.logoIcon}>🔍</div>
                 <h1 className={styles.title}>A CARNIVORE DID IT!</h1>
                 <p className={styles.subtitle}>A Logic Mystery Game</p>
             </header>
@@ -43,7 +33,7 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onStartGame }) => {
                             Intermediate (5 Suspects)
                         </button>
                         <button
-                            className={`${styles.diffBtn} ${styles.medium}`}
+                            className={`${styles.diffBtn} ${styles.hard}`}
                             onClick={() => startOpenCase('level7')}
                         >
                             Advanced (7 Suspects)
@@ -55,8 +45,11 @@ const MenuScreen: React.FC<MenuScreenProps> = ({ onStartGame }) => {
                     <div className={styles.cardIcon}>🏆</div>
                     <h2>Campaign Mode</h2>
                     <p>Race against time through 8 increasingly difficult cases.</p>
-                    <button className={styles.startBtn} disabled title="Coming Soon">
-                        Start Campaign (Coming Soon)
+                    <button
+                        className={styles.startBtn}
+                        onClick={startCampaign}
+                    >
+                        Start Campaign
                     </button>
                 </div>
             </div>

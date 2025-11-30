@@ -11,12 +11,6 @@
     margin-bottom: 1rem;
 }
 
-.logoIcon {
-    font-size: 4rem;
-    margin-bottom: 0.5rem;
-    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
-}
-
 .title {
     font-size: 3.5rem;
     font-weight: 800;
@@ -113,23 +107,6 @@
     border-radius: 8px;
     font-weight: 700;
     font-size: 1.1rem;
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-    color: white;
-    width: 100%;
-    margin-top: auto;
-}
-
-.startBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #334155;
-}
-
-.footer {
-    margin-top: 2rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    opacity: 0.7;
 }
 
 @keyframes fadeIn {
@@ -153,10 +130,6 @@
     .title {
         font-size: 2.5rem;
         text-align: center;
-    }
-
-    .logoIcon {
-        font-size: 3rem;
     }
 
     .modeCard {

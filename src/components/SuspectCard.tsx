@@ -112,7 +112,6 @@ const SuspectCard: React.FC<SuspectCardProps> = ({
                             isMarkedFalse={!!isStatementMarkedFalse}
                             onToggle={() => {
                                 // Allow bubble up to trigger flip
-                                // onStatementToggle(); // Disable default toggle on mobile if using menu
                             }}
                             minimal={true}
                         />
