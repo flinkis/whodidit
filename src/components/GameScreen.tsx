@@ -62,22 +62,33 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         const CARD_WIDTH = isMobile ? 120 : 220;
         const CARD_HEIGHT = isMobile ? 180 : 400;
 
-        const CENTER_CLEARANCE = isMobile ? 60 : 100;
         const SCREEN_PADDING = isMobile ? 10 : 40;
 
-        const minCircumference = total * (CARD_WIDTH * (isMobile ? 1.05 : 1.1));
-        const minRadiusOverlap = minCircumference / (2 * Math.PI);
+        if (isMobile) {
+            const maxRadiusX = (width / 2) - (CARD_WIDTH / 2) - SCREEN_PADDING;
+            // Estimate available height minus header (approx 120px)
+            const availableHeight = height - 180;
+            const maxRadiusY = (availableHeight / 2) - (CARD_HEIGHT / 2) - SCREEN_PADDING;
 
-        const minRadiusCenter = CENTER_CLEARANCE + (isMobile ? 80 : 120);
+            return {
+                x: Math.max(maxRadiusX, CARD_WIDTH * 0.6),
+                y: Math.max(maxRadiusY, CARD_HEIGHT * 0.6)
+            };
+        }
+
+        const CENTER_CLEARANCE = 100;
+        const minCircumference = total * (CARD_WIDTH * 1.1);
+        const minRadiusOverlap = minCircumference / (2 * Math.PI);
+        const minRadiusCenter = CENTER_CLEARANCE + 120;
 
         const minRadius = Math.max(minRadiusOverlap, minRadiusCenter);
 
         const maxRadiusX = (width / 2) - (CARD_WIDTH / 2) - SCREEN_PADDING;
         const maxRadiusY = (height / 2) - (CARD_HEIGHT / 2) - SCREEN_PADDING;
-
         const maxRadius = Math.min(maxRadiusX, maxRadiusY);
 
-        return Math.min(Math.max(minRadius, maxRadius * 0.85), maxRadius);
+        const finalRadius = Math.min(Math.max(minRadius, maxRadius * 0.85), maxRadius);
+        return { x: finalRadius, y: finalRadius };
     };
 
     // Timer Logic
@@ -304,15 +315,22 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
             {/* Main Game Area */}
             <div className={styles.circleContainer}>
                 {/* Glowing Ring Background */}
-                <div className={styles.ringBackground}></div>
+                <div
+                    className={styles.ringBackground}
+                    style={isMobile ? {
+                        width: '90%',
+                        height: '80%',
+                        borderRadius: '50%'
+                    } : undefined}
+                ></div>
 
                 {gameData.suspectIds.map((id, index) => {
                     const total = gameData.suspectIds.length;
                     const angle = (index * (360 / total)) - 90;
                     const radius = calculateRadius(total);
 
-                    const x = Math.cos((angle * Math.PI) / 180) * radius;
-                    const y = Math.sin((angle * Math.PI) / 180) * radius;
+                    const x = Math.cos((angle * Math.PI) / 180) * radius.x;
+                    const y = Math.sin((angle * Math.PI) / 180) * radius.y;
 
                     const suspect = ANIMALS[id];
                     const statement = gameData.statements[id];
