@@ -1,0 +1,130 @@
+.header {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: auto minmax(120px, auto);
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-bottom: 2px solid #e0e0e0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 20px 20px;
+    max-width: 720px;
+}
+
+/* Top Row */
+.titleSection {
+    grid-column: 1 / 6;
+    display: flex;
+    align-items: center;
+}
+
+.titleMain {
+    font-size: 3.2rem;
+    line-height: 1;
+    font-weight: 800;
+    color: #2c3e50;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.caseNameSection {
+    grid-column: 6 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.caseNumber {
+    font-size: 1.4rem;
+    color: #7f8c8d;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* Middle Row */
+.statsContainer {
+    grid-column: 1 / 6;
+    grid-row: 2;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.pillBadge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.rem;
+    padding: .7rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: white;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s ease, border-bottom-width 0.1s ease;
+    min-width: 130px;
+    height: 120px;
+    position: relative;
+    top: 0;
+}
+
+.pillBadge span:first-child {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.pillSuspects {
+    background-color: #90caf9;
+    border-bottom: 8px solid #42a5f5;
+}
+
+.pillCulprit {
+    background-color: #ef9a9a;
+    border-bottom: 8px solid #ef5350;
+}
+
+.pillLies {
+    background-color: #ce93d8;
+    border-bottom: 8px solid #ab47bc;
+}
+
+/* Timer Section */
+.timerSection {
+    grid-column: 6 / 9;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.timerValue {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #2c3e50;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.stars {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.starFilled,
+.starEmpty {
+    font-size: 3.2rem;
+    line-height: 1;
+}
+
+.starFilled {
+    color: #ffc107;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.starEmpty {
+    color: #e0e0e0;
+}

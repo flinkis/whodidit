@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateCase } from '../logic/caseGenerator';
 import { ANIMALS } from '../data/animals';
+import { CASE_NAMES } from '../data/caseNames';
 import SuspectCard from './SuspectCard';
 import StatementCard from './StatementCard';
 import ResultsModal from './ResultsModal';
+import GameHeader from './GameHeader';
+import SubmitButton from './SubmitButton';
 import styles from './GameScreen.module.css';
 import { GameConfig, GameData } from '../types';
 
@@ -23,7 +26,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [caseNumber] = useState(Math.floor(Math.random() * 1000));
+    const [caseNumber, setCaseNumber] = useState(Math.floor(Math.random() * 1000));
+    const [caseName, setCaseName] = useState(CASE_NAMES[Math.floor(Math.random() * CASE_NAMES.length)]);
 
     // Game State
     const [selectedCulprits, setSelectedCulprits] = useState<Set<number>>(new Set());
@@ -63,6 +67,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         setMarkedStatements(new Set());
         setError(null);
 
+        // Generate new case details
+        setCaseNumber(Math.floor(Math.random() * 1000));
+        setCaseName(CASE_NAMES[Math.floor(Math.random() * CASE_NAMES.length)]);
+
         setTimeout(() => {
             try {
                 const newCase = generateCase(config);
@@ -88,17 +96,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         if (seconds < 60) return 3;
         if (seconds < 120) return 2;
         return 1;
-    };
-
-    const renderStars = () => {
-        const rating = getStarRating(elapsedTime);
-        return (
-            <div className={styles.stars}>
-                <span className={rating >= 1 ? styles.starFilled : styles.starEmpty}>★</span>
-                <span className={rating >= 2 ? styles.starFilled : styles.starEmpty}>★</span>
-                <span className={rating >= 3 ? styles.starFilled : styles.starEmpty}>★</span>
-            </div>
-        );
     };
 
     const handleSuspectClick = (id: number) => {
@@ -204,22 +201,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
     return (
         <div className={styles.gameContainer}>
-            {/* Header Pill */}
-            <header className={styles.header}>
-                <div className={styles.headerTitle}>
-                    <div className={styles.titleMain}>A Carnivore Did It! - Case #{caseNumber}</div>
-                    <div className={styles.titleSub}>
-                        <span className={styles.pillBadge}>{config.suspectCount} Suspects</span>
-                        <span className={styles.pillBadge}>{config.culpritCount} Culprit</span>
-                        <span className={styles.pillBadge}>{config.constraints.minLiars}-{config.constraints.maxLiars} Lies</span>
-                    </div>
-                </div>
-
-                <div className={styles.timerContainer}>
-                    <div className={styles.timerValue}>{formatTime(elapsedTime)}</div>
-                    {renderStars()}
-                </div>
-            </header>
+            <GameHeader
+                caseNumber={caseNumber}
+                caseName={caseName}
+                suspectCount={config.suspectCount}
+                culpritCount={config.culpritCount}
+                minLiars={config.constraints.minLiars ?? 0}
+                maxLiars={config.constraints.maxLiars ?? 0}
+                elapsedTime={elapsedTime}
+                stars={getStarRating(elapsedTime)}
+            />
 
             {/* Main Game Area */}
             <div className={styles.circleContainer}>
@@ -269,19 +260,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
                 {/* Center Button */}
                 <div className={styles.centerActions}>
-                    <button className={styles.submitBtn} onClick={handleSubmit}>
-                        <div className={styles.btnIcon}>🔍</div>
-                        <div className={styles.btnText}>SUBMIT<br />SOLUTION</div>
-                    </button>
+                    <SubmitButton onClick={handleSubmit} />
                 </div>
             </div>
 
             {/* Footer */}
             <div className={styles.footerControls}>
-                <button className={styles.hintBtn} onClick={() => alert("Hint: Try marking statements as false if they contradict known facts!")}>
-                    Get Hint
-                </button>
-
                 <div className={styles.progressContainer}>
                     {/* Placeholder for progress/stars remaining */}
                     <div className={styles.progressBar} style={{ width: '80%' }}></div>
