@@ -1,34 +1,77 @@
 .card {
     width: 180px;
     height: 260px;
-    background: #fff;
-    border-radius: 12px;
     position: relative;
+    perspective: 1000px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.cardInner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border: 4px solid var(--suspect-color);
+}
+
+.flipped .cardInner {
+    transform: rotateY(180deg);
+}
+
+.cardFront,
+.cardBack {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    background: #fff;
+    border: 4px solid var(--suspect-color);
 }
 
-.card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
-    z-index: 10;
+.cardBack {
+    transform: rotateY(180deg);
+    background: #fafafa;
+    padding: 1rem;
+    justify-content: center;
+    align-items: center;
 }
 
 /* States */
-.culprit {
+.culprit .cardInner {
     box-shadow: 0 0 0 4px #ff3366, 0 8px 16px rgba(255, 51, 102, 0.4);
     transform: scale(1.05);
+    background: #f5f5f5;
 }
 
-.innocent {
+.flipped.culprit .cardInner {
+    transform: rotateY(180deg) scale(1.05);
+}
+
+.innocent .cardInner {
+    transform: scale(0.95);
+}
+
+.innocent .cardFront {
     opacity: 0.6;
     filter: grayscale(100%);
-    transform: scale(0.95);
+}
+
+.flipped.innocent .cardInner {
+    transform: rotateY(180deg) scale(0.95);
 }
 
 .innerContent {
@@ -118,4 +161,37 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     pointer-events: none;
     white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .card {
+        width: 120px;
+        height: 180px;
+    }
+
+    .name {
+        font-size: 0.9rem;
+    }
+
+    .stats {
+        font-size: 0.65rem;
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .badge {
+        font-size: 0.9rem;
+        padding: 4px 8px;
+        border-width: 2px;
+    }
+
+    .imageContainer {
+        height: 100px;
+        flex: none;
+    }
+
+    .cardBack {
+        padding: 0.5rem;
+        border-bottom: 4px solid var(--suspect-color);
+    }
 }

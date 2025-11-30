@@ -143,3 +143,33 @@
         transform: translateY(0);
     }
 }
+
+@media (max-width: 768px) {
+    .menuContainer {
+        padding: 1rem;
+        gap: 2rem;
+    }
+
+    .title {
+        font-size: 2.5rem;
+        text-align: center;
+    }
+
+    .logoIcon {
+        font-size: 3rem;
+    }
+
+    .modeCard {
+        width: 100%;
+        max-width: 350px;
+        padding: 1.5rem;
+    }
+
+    .cardIcon {
+        font-size: 2.5rem;
+    }
+
+    .modeCard h2 {
+        font-size: 1.5rem;
+    }
+}

@@ -7,10 +7,11 @@ interface StatementCardProps {
     text: string;
     suspect: Animal;
     isMarkedFalse: boolean;
-    onToggle: () => void;
+    onToggle: (e?: React.MouseEvent) => void;
+    minimal?: boolean;
 }
 
-const StatementCard: React.FC<StatementCardProps> = ({ text, suspect, isMarkedFalse, onToggle }) => {
+const StatementCard: React.FC<StatementCardProps> = ({ text, suspect, isMarkedFalse, onToggle, minimal = false }) => {
     const highlightKeywords = (content: string) => {
         const keywords = ["did", "didn't", "lying", "truth", "shorter", "taller"];
         const suspectNames = Object.values(ANIMALS).map(a => a.name);
@@ -41,10 +42,15 @@ const StatementCard: React.FC<StatementCardProps> = ({ text, suspect, isMarkedFa
 
     return (
         <div
-            className={`${styles.card} ${isMarkedFalse ? styles.markedFalse : ''}`}
+            className={`${styles.card} ${isMarkedFalse ? styles.markedFalse : ''} ${minimal ? styles.minimal : ''}`}
             onClick={onToggle}
             title="Click to mark as False/True"
         >
+            <div className={styles.header}>
+                <span className={styles.suspectName} style={{ color: suspect.color }}>
+                    {suspect.name} says:
+                </span>
+            </div>
             <p className={styles.text}>
                 {highlightKeywords(text)}
             </p>

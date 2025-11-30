@@ -92,6 +92,7 @@
     border: 2px dashed rgba(0, 0, 0, 0.1);
     border-radius: 50%;
     pointer-events: none;
+    transition: all 0.3s ease;
 }
 
 .suspectWrapper {
@@ -121,4 +122,24 @@
 .progressBar {
     height: 100%;
     background: #2ecc71;
+}
+
+@media (max-width: 768px) {
+    .ringBackground {
+        width: 300px;
+        height: 300px;
+    }
+
+    .gameContainer {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    .circleContainer {
+        min-height: 600px;
+        /* Ensure enough space for the circle */
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
 }

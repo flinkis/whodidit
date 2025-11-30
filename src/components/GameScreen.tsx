@@ -7,19 +7,13 @@ import StatementCard from './StatementCard';
 import ResultsModal from './ResultsModal';
 import GameHeader from './GameHeader';
 import SubmitButton from './SubmitButton';
+import MobileActionMenu from './MobileActionMenu';
 import styles from './GameScreen.module.css';
-import { GameConfig, GameData } from '../types';
+import { GameConfig, GameData, Result } from '../types';
 
 interface GameScreenProps {
     config: GameConfig;
     onExit: () => void;
-}
-
-interface Result {
-    success: boolean;
-    stars?: number;
-    time?: string;
-    solution: any;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
@@ -34,8 +28,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
     const [innocentSuspects, setInnocentSuspects] = useState<Set<number>>(new Set());
     const [markedStatements, setMarkedStatements] = useState<Set<number>>(new Set());
     const [startTime, setStartTime] = useState(Date.now());
-    const [elapsedTime, setElapsedTime] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(600);
     const [result, setResult] = useState<Result | null>(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [flippedSuspectIds, setFlippedSuspectIds] = useState<Set<number>>(new Set());
+    const [menuSuspectId, setMenuSuspectId] = useState<number | null>(null);
+    const [topCardId, setTopCardId] = useState<number | null>(null);
 
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,17 +45,63 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         };
     }, [config]);
 
+    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const calculateRadius = (total: number) => {
+        const { width, height } = windowSize;
+
+        const CARD_WIDTH = isMobile ? 120 : 220;
+        const CARD_HEIGHT = isMobile ? 180 : 400;
+
+        const CENTER_CLEARANCE = isMobile ? 60 : 100;
+        const SCREEN_PADDING = isMobile ? 10 : 40;
+
+        const minCircumference = total * (CARD_WIDTH * (isMobile ? 1.05 : 1.1));
+        const minRadiusOverlap = minCircumference / (2 * Math.PI);
+
+        const minRadiusCenter = CENTER_CLEARANCE + (isMobile ? 80 : 120);
+
+        const minRadius = Math.max(minRadiusOverlap, minRadiusCenter);
+
+        const maxRadiusX = (width / 2) - (CARD_WIDTH / 2) - SCREEN_PADDING;
+        const maxRadiusY = (height / 2) - (CARD_HEIGHT / 2) - SCREEN_PADDING;
+
+        const maxRadius = Math.min(maxRadiusX, maxRadiusY);
+
+        return Math.min(Math.max(minRadius, maxRadius * 0.85), maxRadius);
+    };
+
     // Timer Logic
     useEffect(() => {
-        if (!loading && !result) {
+        if (!loading && !result && timeLeft > 0) {
             timerRef.current = setInterval(() => {
-                setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        setResult({
+                            success: false,
+                            solution: gameData!.solution,
+                            reason: 'timeout'
+                        });
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             }, 1000);
         }
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [loading, result, startTime]);
+    }, [loading, result, gameData]);
 
     const startNewCase = () => {
         setLoading(true);
@@ -76,7 +120,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                 const newCase = generateCase(config);
                 setGameData(newCase);
                 setStartTime(Date.now());
-                setElapsedTime(0);
+                setTimeLeft(600);
                 setLoading(false);
             } catch (err) {
                 console.error("Failed to generate case:", err);
@@ -92,9 +136,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const getStarRating = (seconds: number) => {
-        if (seconds < 60) return 3;
-        if (seconds < 120) return 2;
+    const getStarRating = (remainingTime: number) => {
+        const elapsed = 600 - remainingTime;
+        if (elapsed < 60) return 3;
+        if (elapsed < 120) return 2;
         return 1;
     };
 
@@ -113,6 +158,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
         setSelectedCulprits(newSelected);
         setInnocentSuspects(newInnocent);
+        setTopCardId(id);
     };
 
     const handleSuspectRightClick = (e: React.MouseEvent, id: number) => {
@@ -131,6 +177,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
         setInnocentSuspects(newInnocent);
         setSelectedCulprits(newSelected);
+        setTopCardId(id);
     };
 
     const handleStatementToggle = (id: number) => {
@@ -143,6 +190,48 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
             newMarked.add(id);
         }
         setMarkedStatements(newMarked);
+    };
+
+    const handleMenuAction = (action: 'culprit' | 'innocent' | 'lie' | 'clear') => {
+        if (!menuSuspectId) return;
+
+        switch (action) {
+            case 'culprit':
+                handleSuspectClick(menuSuspectId);
+                break;
+            case 'innocent':
+                // Custom logic to toggle innocent without affecting others if needed, 
+                // but handleSuspectRightClick toggles innocent/selected correctly.
+                // We need to simulate the event or extract logic.
+                // Extracting logic:
+                const newInnocent = new Set(innocentSuspects);
+                const newSelected = new Set(selectedCulprits);
+                if (newInnocent.has(menuSuspectId)) {
+                    newInnocent.delete(menuSuspectId);
+                } else {
+                    newInnocent.add(menuSuspectId);
+                    newSelected.delete(menuSuspectId);
+                }
+                setInnocentSuspects(newInnocent);
+                setSelectedCulprits(newSelected);
+                break;
+            case 'lie':
+                handleStatementToggle(menuSuspectId);
+                break;
+            case 'clear':
+                const clearedInnocent = new Set(innocentSuspects);
+                const clearedSelected = new Set(selectedCulprits);
+                const clearedStatements = new Set(markedStatements);
+
+                clearedInnocent.delete(menuSuspectId);
+                clearedSelected.delete(menuSuspectId);
+                clearedStatements.delete(menuSuspectId);
+
+                setInnocentSuspects(clearedInnocent);
+                setSelectedCulprits(clearedSelected);
+                setMarkedStatements(clearedStatements);
+                break;
+        }
     };
 
     const handleSubmit = () => {
@@ -162,11 +251,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         }
 
         if (isCorrect) {
-            const stars = getStarRating(elapsedTime);
+            const stars = getStarRating(timeLeft);
             setResult({
                 success: true,
                 stars,
-                time: formatTime(elapsedTime),
+                time: formatTime(600 - timeLeft),
                 solution: gameData.solution
             });
         } else {
@@ -208,8 +297,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                 culpritCount={config.culpritCount}
                 minLiars={config.constraints.minLiars ?? 0}
                 maxLiars={config.constraints.maxLiars ?? 0}
-                elapsedTime={elapsedTime}
-                stars={getStarRating(elapsedTime)}
+                timeLeft={timeLeft}
+                stars={getStarRating(timeLeft)}
             />
 
             {/* Main Game Area */}
@@ -220,7 +309,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                 {gameData.suspectIds.map((id, index) => {
                     const total = gameData.suspectIds.length;
                     const angle = (index * (360 / total)) - 90;
-                    const radius = (total === 7 ? 450 : total === 5 ? 350 : 300);// 450 for 7 suspects, 350 for 5 suspects, 275 for 3 suspects
+                    const radius = calculateRadius(total);
 
                     const x = Math.cos((angle * Math.PI) / 180) * radius;
                     const y = Math.sin((angle * Math.PI) / 180) * radius;
@@ -237,7 +326,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                             key={id}
                             className={styles.suspectWrapper}
                             style={{
-                                transform: `translate(${x}px, ${y}px)`
+                                transform: `translate(${x}px, ${y}px)`,
+                                zIndex: topCardId === id ? 100 : 1
                             }}
                         >
                             <SuspectCard
@@ -245,15 +335,32 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                                 state={state}
                                 onClick={() => handleSuspectClick(id)}
                                 onContextMenu={(e) => handleSuspectRightClick(e, id)}
+                                statementText={statement.text}
+                                isStatementMarkedFalse={markedStatements.has(id)}
+                                onStatementToggle={() => handleStatementToggle(id)}
+                                isFlipped={isMobile && flippedSuspectIds.has(id)}
+                                onFlip={isMobile ? () => {
+                                    const newFlipped = new Set(flippedSuspectIds);
+                                    if (newFlipped.has(id)) {
+                                        newFlipped.delete(id);
+                                    } else {
+                                        newFlipped.add(id);
+                                    }
+                                    setFlippedSuspectIds(newFlipped);
+                                    setTopCardId(id);
+                                } : undefined}
+                                onLongPress={isMobile ? () => setMenuSuspectId(id) : undefined}
                             />
-                            <div className={styles.statementWrapper}>
-                                <StatementCard
-                                    text={statement.text}
-                                    suspect={suspect}
-                                    isMarkedFalse={markedStatements.has(id)}
-                                    onToggle={() => handleStatementToggle(id)}
-                                />
-                            </div>
+                            {!isMobile && (
+                                <div className={styles.statementWrapper}>
+                                    <StatementCard
+                                        text={statement.text}
+                                        suspect={suspect}
+                                        isMarkedFalse={markedStatements.has(id)}
+                                        onToggle={() => handleStatementToggle(id)}
+                                    />
+                                </div>
+                            )}
                         </div>
                     );
                 })}
@@ -264,20 +371,27 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className={styles.footerControls}>
-                <div className={styles.progressContainer}>
-                    {/* Placeholder for progress/stars remaining */}
-                    <div className={styles.progressBar} style={{ width: '80%' }}></div>
-                </div>
-            </div>
-
             <ResultsModal
                 result={result}
                 onNext={startNewCase}
                 onRetry={() => setResult(null)}
                 onExit={onExit}
             />
+
+            {menuSuspectId !== null && gameData && (
+                <MobileActionMenu
+                    suspect={ANIMALS[menuSuspectId]}
+                    isOpen={true}
+                    onClose={() => setMenuSuspectId(null)}
+                    onToggleCulprit={() => handleMenuAction('culprit')}
+                    onToggleInnocent={() => handleMenuAction('innocent')}
+                    onToggleLie={() => handleMenuAction('lie')}
+                    onClear={() => handleMenuAction('clear')}
+                    isCulprit={selectedCulprits.has(menuSuspectId)}
+                    isInnocent={innocentSuspects.has(menuSuspectId)}
+                    isLie={markedStatements.has(menuSuspectId)}
+                />
+            )}
         </div>
     );
 };

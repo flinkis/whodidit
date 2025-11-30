@@ -24,6 +24,11 @@
     border-bottom: 1px solid #eee;
     padding-bottom: 6px;
     margin-bottom: 4px;
+    display: none;
+}
+
+.minimal .header {
+    display: block;
 }
 
 .suspectName {
@@ -67,4 +72,50 @@
     padding: 4px 12px;
     border-radius: 8px;
     opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .card {
+        width: 160px;
+        padding: 8px;
+    }
+
+    .text {
+        font-size: 0.9rem;
+    }
+
+    .highlight {
+        font-size: 1rem;
+    }
+
+    .markedFalse::after {
+        font-size: 1.5rem;
+    }
+}
+
+.minimal {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 2px;
+    width: 100% !important;
+    height: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.minimal:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.minimal .text {
+    font-size: 0.85rem;
+}
+
+.minimal .highlight {
+    font-size: 0.95rem;
 }

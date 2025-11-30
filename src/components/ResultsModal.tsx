@@ -1,13 +1,6 @@
 import React from 'react';
 import styles from './ResultsModal.module.css';
-import { World } from '../types';
-
-interface Result {
-    success: boolean;
-    stars?: number;
-    time?: string;
-    solution: World;
-}
+import { Result } from '../types';
 
 interface ResultsModalProps {
     result: Result | null;
@@ -42,7 +35,13 @@ const ResultsModal: React.FC<ResultsModalProps> = ({ result, onNext, onRetry, on
                             <p className={styles.time}>Time: {result.time}</p>
                         </>
                     ) : (
-                        <p>That wasn't quite right. Review the clues and try again!</p>
+                        <>
+                            {result.reason === 'timeout' ? (
+                                <p>Time's up! The case has gone cold.</p>
+                            ) : (
+                                <p>That wasn't quite right. Review the clues and try again!</p>
+                            )}
+                        </>
                     )}
                 </div>
 

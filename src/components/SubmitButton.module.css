@@ -40,3 +40,14 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+@media (max-width: 768px) {
+    .submitBtn {
+        width: 100px;
+        height: 100px;
+    }
+
+    .btnText {
+        font-size: 0.9rem;
+    }
+}

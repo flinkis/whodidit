@@ -8,7 +8,7 @@ interface GameHeaderProps {
     culpritCount: number;
     minLiars: number;
     maxLiars: number;
-    elapsedTime: number;
+    timeLeft: number;
     stars: number;
 }
 
@@ -19,7 +19,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     culpritCount,
     minLiars,
     maxLiars,
-    elapsedTime,
+    timeLeft,
     stars
 }) => {
     const formatTime = (seconds: number) => {
@@ -75,7 +75,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 
             {/* Middle Row: Timer/Stars (2/8) */}
             <div className={styles.timerSection}>
-                <div className={styles.timerValue}>{formatTime(elapsedTime)}</div>
+                <div className={styles.timerValue}>{formatTime(timeLeft)}</div>
                 {renderStars()}
             </div>
         </header>

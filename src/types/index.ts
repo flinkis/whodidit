@@ -63,3 +63,11 @@ export interface GameData {
     solution: World;
     config: GameConfig;
 }
+
+export interface Result {
+    success: boolean;
+    stars?: number;
+    time?: string;
+    solution: World;
+    reason?: 'timeout' | 'incorrect';
+}
