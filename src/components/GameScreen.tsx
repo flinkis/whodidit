@@ -163,7 +163,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
 
     const handleSuspectRightClick = (e: React.MouseEvent, id: number) => {
         e.preventDefault();
-        if (result) return;
+        if (result || isMobile) return;
 
         const newInnocent = new Set(innocentSuspects);
         const newSelected = new Set(selectedCulprits);
