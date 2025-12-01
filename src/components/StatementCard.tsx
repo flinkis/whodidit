@@ -11,22 +11,26 @@ interface StatementCardProps {
     minimal?: boolean;
 }
 
+const KEYWORDS = ["did", "didn't", "lying", "truth", "shorter", "taller"];
+
 const StatementCard: React.FC<StatementCardProps> = ({ text, suspect, isMarkedFalse, onToggle, minimal = false }) => {
     const highlightKeywords = (content: string) => {
-        const keywords = ["did", "didn't", "lying", "truth", "shorter", "taller"];
-        const suspectNames = Object.values(ANIMALS).map(a => a.name);
+        // Memoize the regex creation if possible, but since content changes rarely per card, 
+        // we can just optimize the pattern creation.
+        // Actually, since suspect names are static, we can build the pattern once or use useMemo.
 
-        // Combine keywords and names, sort by length descending to match longest phrases first
-        const allPatterns = [...keywords, ...suspectNames].sort((a, b) => b.length - a.length);
-        const regex = new RegExp(`(${allPatterns.join('|')})`, 'gi');
-
-        const parts = content.split(regex);
+        const parts = React.useMemo(() => {
+            const suspectNames = Object.values(ANIMALS).map(a => a.name);
+            const allPatterns = [...KEYWORDS, ...suspectNames].sort((a, b) => b.length - a.length);
+            const regex = new RegExp(`(${allPatterns.join('|')})`, 'gi');
+            return content.split(regex);
+        }, [content]);
 
         return parts.map((part, index) => {
             const lowerPart = part.toLowerCase();
 
             // Check if it's a keyword
-            if (keywords.some(k => k.toLowerCase() === lowerPart)) {
+            if (KEYWORDS.some(k => k.toLowerCase() === lowerPart)) {
                 return <span key={index} className={styles.highlight}>{part}</span>;
             }
 

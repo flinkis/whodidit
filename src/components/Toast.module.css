@@ -1,6 +1,6 @@
 .toast {
     position: fixed;
-    top: 20px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     background: #333;
@@ -44,7 +44,7 @@
 
 @keyframes slideIn {
     from {
-        transform: translate(-50%, -100%);
+        transform: translate(-50%, 100%);
         opacity: 0;
     }
 
@@ -58,6 +58,6 @@
     .toast {
         width: 90%;
         min-width: auto;
-        top: 10px;
+        bottom: 10px;
     }
 }

@@ -27,11 +27,12 @@ const GameHeader: React.FC<GameHeaderProps> = ({
     };
 
     const renderStars = () => {
+        const maxStars = gameState.mode === 'campaign' ? 5 : 3;
         return (
             <div className={styles.stars}>
-                <span className={stars >= 1 ? styles.starFilled : styles.starEmpty}>★</span>
-                <span className={stars >= 2 ? styles.starFilled : styles.starEmpty}>★</span>
-                <span className={stars >= 3 ? styles.starFilled : styles.starEmpty}>★</span>
+                {[...Array(maxStars)].map((_, i) => (
+                    <span key={i} className={stars >= i + 1 ? styles.starFilled : styles.starEmpty}>★</span>
+                ))}
             </div>
         );
     };

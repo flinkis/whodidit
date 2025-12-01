@@ -87,7 +87,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isCampaignComplete: false
         });
         setTimeLeft(900); // 15 minutes
-        setStars(3);
+        setStars(5);
         setIsTimerRunning(true);
     };
 

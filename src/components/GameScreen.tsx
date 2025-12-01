@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateCase } from '../logic/caseGenerator';
 import { ANIMALS } from '../data/animals';
 import { CASE_NAMES } from '../data/caseNames';
-import SuspectCard from './SuspectCard';
-import StatementCard from './StatementCard';
-import ResultsModal from './ResultsModal';
 import GameHeader from './GameHeader';
-import SubmitButton from './SubmitButton';
+import GameBoard from './GameBoard';
 import Toast from './Toast';
 import MobileActionMenu from './MobileActionMenu';
 import styles from './GameScreen.module.css';
 import { GameConfig, GameData, Result } from '../types';
 import { useGame } from '../context/GameContext';
-import CampaignWinModal from './CampaignWinModal';
+import GameFooter from './GameFooter';
+import { useModal } from '../context/ModalContext';
+import modalStyles from './Modal.module.css'; // Import modal styles for content rendering
+import HowToPlayModal from './HowToPlayModal';
 
 interface GameScreenProps {
     config: GameConfig;
@@ -20,7 +20,8 @@ interface GameScreenProps {
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
-    const { gameState, advanceCampaign, timeLeft, stopTimer, startTimer, stars, decrementStars } = useGame();
+    const { gameState, advanceCampaign, timeLeft, stopTimer, startTimer, stars, decrementStars, startOpenCase, startCampaign } = useGame();
+    const { openModal, closeModal } = useModal();
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,65 +53,52 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         };
     }, [config]);
 
-    const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
-            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         };
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
-    const calculateRadius = (total: number) => {
-        const { width, height } = windowSize;
-
-        const CARD_WIDTH = isMobile ? 120 : 220;
-        const CARD_HEIGHT = isMobile ? 180 : 400;
-
-        const SCREEN_PADDING = isMobile ? 10 : 40;
-
-        if (isMobile) {
-            const maxRadiusX = (width / 2) - (CARD_WIDTH / 2) - SCREEN_PADDING;
-            // Estimate available height minus header (approx 120px)
-            const availableHeight = height - 180;
-            const maxRadiusY = (availableHeight / 2) - (CARD_HEIGHT / 2) - SCREEN_PADDING;
-
-            return {
-                x: Math.max(maxRadiusX, CARD_WIDTH * 0.6),
-                y: Math.max(maxRadiusY, CARD_HEIGHT * 0.6)
-            };
+        // Check for tutorial
+        const hasSeenTutorial = localStorage.getItem('whoDidIt_tutorial_seen');
+        if (!hasSeenTutorial) {
+            // Small delay to ensure modal context is ready and to not conflict with other potential modals
+            setTimeout(() => {
+                openModal({
+                    title: 'HOW TO PLAY',
+                    icon: !isMobile ? '🎓' : null,
+                    children: <HowToPlayModal onClose={closeModal} />,
+                    actions: null
+                });
+            }, 500);
         }
 
-        const CENTER_CLEARANCE = 100;
-        const minCircumference = total * (CARD_WIDTH * 1.1);
-        const minRadiusOverlap = minCircumference / (2 * Math.PI);
-        const minRadiusCenter = CENTER_CLEARANCE + 120;
-
-        const minRadius = Math.max(minRadiusOverlap, minRadiusCenter);
-
-        const maxRadiusX = (width / 2) - (CARD_WIDTH / 2) - SCREEN_PADDING;
-        const maxRadiusY = (height / 2) - (CARD_HEIGHT / 2) - SCREEN_PADDING;
-        const maxRadius = Math.min(maxRadiusX, maxRadiusY);
-
-        const finalRadius = Math.min(Math.max(minRadius, maxRadius * 0.85), maxRadius);
-        return { x: finalRadius, y: finalRadius };
-    };
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Watch for timeout from context
     useEffect(() => {
         if (timeLeft === 0 && !result && !loading) {
-            setResult({
+            const newResult: Result = {
                 success: false,
                 solution: gameData?.solution || { culprits: new Set(), liars: new Set() },
                 reason: 'timeout'
-            });
+            };
+            setResult(newResult);
             stopTimer();
+            // Modal will be opened by the result effect
         }
     }, [timeLeft, result, loading, gameData, stopTimer]);
 
-    const startNewCase = () => {
+    const startNewCase = (reset: boolean = false) => {
+        if (reset) {
+            if (gameState.mode === 'campaign') {
+                startCampaign();
+            } else {
+                startOpenCase(gameState.currentLevelId);
+            }
+        }
+
         setLoading(true);
         setResult(null);
         setSelectedCulprits(new Set());
@@ -143,6 +131,115 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    // Effect to handle result changes and open modal
+    useEffect(() => {
+        if (!result) return;
+
+        const isCampaign = gameState.mode === 'campaign';
+
+        const handleNext = () => {
+            closeModal();
+            if (isCampaign) {
+                advanceCampaign();
+            } else {
+                startNewCase(true); // Reset stats for new open case
+            }
+        };
+
+        const handleRetry = () => {
+            startNewCase(true); // Reset stats on retry
+            closeModal();
+        };
+
+        const handleExit = () => {
+            closeModal();
+            onExit();
+        };
+
+        const actions = (
+            <>
+                {result.success ? (
+                    <button className={modalStyles.primaryBtn} onClick={handleNext}>
+                        {isCampaign ? 'Next Level' : 'Another Case?'}
+                    </button>
+                ) : isCampaign && result.reason !== 'given_up' ? (
+                    null
+                ) : (
+                    <button className={modalStyles.primaryBtn} onClick={handleRetry}>Try Again</button>
+                )}
+                <button className={modalStyles.secondaryBtn} onClick={handleExit}>Exit to Menu</button>
+            </>
+        );
+
+        const content = result.success ? (
+            <>
+                <p>You found the true culprit!</p>
+                <div className={modalStyles.stars} style={{ fontSize: '2.5rem', margin: '1rem 0', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                    {[...Array(isCampaign ? 5 : 3)].map((_, i) => (
+                        <span key={i} className={i < (result.stars || 0) ? modalStyles.starFilled : modalStyles.starEmpty}>⭐</span>
+                    ))}
+                </div>
+                <p className={modalStyles.time} style={{ fontFamily: 'monospace', fontSize: '1.2rem', color: 'var(--text-secondary)' }}>Time: {result.time}</p>
+            </>
+        ) : (
+            <>
+                {result.reason === 'timeout' ? (
+                    <p>You're too late! The case has gone cold.</p>
+                ) : result.reason === 'stars' ? (
+                    <p>You've lost all your stars! <br />The chief has taken you off the case.</p>
+                ) : result.reason === 'given_up' ? (
+                    <p>Nobody remembers a quitter, don't give up yet!</p>
+                ) : (
+                    <p>That wasn't quite right. Review the clues and try again!</p>
+                )}
+            </>
+        );
+
+        const title = result.reason === 'timeout' ? 'TIME IS UP' : result.reason === 'stars' ? 'BETTER LUCK NEXT TIME' : result.reason === 'given_up' ? 'GIVING UP?' : result.success ? 'CASE SOLVED!' : 'INCORRECT SOLUTION';
+
+        openModal({
+            icon: result.success ? '🎉' : '🕵️',
+            title: title,
+            children: content,
+            actions: actions
+        });
+
+    }, [result]);
+
+    // Effect for Campaign Win
+    useEffect(() => {
+        if (gameState.isCampaignComplete) {
+            const handleExit = () => {
+                closeModal();
+                onExit();
+            };
+
+            const actions = (
+                <button className={modalStyles.primaryBtn} onClick={handleExit}>Return to Menu</button>
+            );
+
+            openModal({
+                icon: '🏆',
+                title: 'CAMPAIGN COMPLETED!',
+                actions: actions,
+                children: (
+                    <>
+                        <p>Congratulations, Detective!</p>
+                        <p>You have successfully solved all cases and proven yourself as a master investigator.</p>
+                        <div className={modalStyles.stars} style={{ marginTop: '20px', fontSize: '2.5rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                            <span className={modalStyles.starFilled}>⭐</span>
+                            <span className={modalStyles.starFilled}>⭐</span>
+                            <span className={modalStyles.starFilled}>⭐</span>
+                            <span className={modalStyles.starFilled}>⭐</span>
+                            <span className={modalStyles.starFilled}>⭐</span>
+                        </div>
+                        <p className={modalStyles.time} style={{ marginTop: '10px', fontFamily: 'monospace', fontSize: '1.2rem', color: 'var(--text-primary)' }}>The city is safe thanks to you.</p>
+                    </>
+                )
+            });
+        }
+    }, [gameState.isCampaignComplete]);
 
 
 
@@ -238,6 +335,17 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         }
     };
 
+    const handleFlip = (id: number) => {
+        const newFlipped = new Set(flippedSuspectIds);
+        if (newFlipped.has(id)) {
+            newFlipped.delete(id);
+        } else {
+            newFlipped.add(id);
+        }
+        setFlippedSuspectIds(newFlipped);
+        setTopCardId(id);
+    };
+
     const handleSubmit = () => {
         if (!gameData) return;
 
@@ -260,7 +368,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         if (isCorrect) {
             setResult({
                 success: true,
-                stars, // Use stars from context
+                stars,
                 time: formatTime(gameState.mode === 'open' ? 300 - timeLeft : 900 - timeLeft),
                 solution: gameData.solution
             });
@@ -282,17 +390,60 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
         }
     };
 
-    const handleToastClose = useCallback(() => {
+    const handleToastClose = React.useCallback(() => {
         setShowToast(false);
     }, []);
 
-    const handleNext = () => {
-        if (gameState.mode === 'campaign') {
-            advanceCampaign();
-        } else {
-            startNewCase();
+    const handleEndCase = () => {
+        if (!gameData) return;
+        setResult({
+            success: false,
+            solution: gameData.solution,
+            reason: 'given_up'
+        });
+        stopTimer();
+    };
+
+    const handleHint = () => {
+        if (!gameData) return;
+
+        if (stars <= 0) {
+            setToastMessage("Not enough stars for a hint!");
+            setShowToast(true);
+            return;
         }
-        // Timer will be resumed by useEffect or advanceCampaign logic
+
+        // Find innocent suspects (not culprits)
+        const allInnocents = gameData.suspectIds.filter(id => !gameData.solution.culprits.has(id));
+
+        // Filter out those already known (in innocentSuspects set)
+        const unknownInnocents = allInnocents.filter(id => !innocentSuspects.has(id));
+
+        if (unknownInnocents.length === 0) {
+            setToastMessage("No more hints available!");
+            setShowToast(true);
+            return;
+        }
+
+        // Pick one at random
+        const hintId = unknownInnocents[Math.floor(Math.random() * unknownInnocents.length)];
+        const suspectName = ANIMALS[hintId].name;
+
+        // Reveal it
+        const newInnocent = new Set(innocentSuspects);
+        newInnocent.add(hintId);
+        setInnocentSuspects(newInnocent);
+
+        // Also remove from selected culprits if present (just in case)
+        if (selectedCulprits.has(hintId)) {
+            const newSelected = new Set(selectedCulprits);
+            newSelected.delete(hintId);
+            setSelectedCulprits(newSelected);
+        }
+
+        decrementStars();
+        setToastMessage(`Hint: ${suspectName} is innocent! (-1 Star)`);
+        setShowToast(true);
     };
 
     if (loading) {
@@ -325,114 +476,53 @@ const GameScreen: React.FC<GameScreenProps> = ({ config, onExit }) => {
             />
 
             {/* Main Game Area */}
-            <div className={styles.circleContainer}>
-                {/* Glowing Ring Background */}
-                <div
-                    className={styles.ringBackground}
-                    style={isMobile ? {
-                        width: '90%',
-                        height: '80%',
-                        borderRadius: '50%'
-                    } : undefined}
-                ></div>
-
-                {gameData.suspectIds.map((id, index) => {
-                    const total = gameData.suspectIds.length;
-                    const angle = (index * (360 / total)) - 90;
-                    const radius = calculateRadius(total);
-
-                    const x = Math.cos((angle * Math.PI) / 180) * radius.x;
-                    const y = Math.sin((angle * Math.PI) / 180) * radius.y;
-
-                    const suspect = ANIMALS[id];
-                    const statement = gameData.statements[id];
-
-                    let state: 'default' | 'culprit' | 'innocent' = 'default';
-                    if (selectedCulprits.has(id)) state = 'culprit';
-                    if (innocentSuspects.has(id)) state = 'innocent';
-
-                    return (
-                        <div
-                            key={id}
-                            className={styles.suspectWrapper}
-                            style={{
-                                transform: `translate(${x}px, ${y}px)`,
-                                zIndex: topCardId === id ? 100 : 1
-                            }}
-                        >
-                            <SuspectCard
-                                suspect={suspect}
-                                state={state}
-                                onClick={() => handleSuspectClick(id)}
-                                onContextMenu={(e) => handleSuspectRightClick(e, id)}
-                                statementText={statement.text}
-                                isStatementMarkedFalse={markedStatements.has(id)}
-                                onStatementToggle={() => handleStatementToggle(id)}
-                                isFlipped={isMobile && flippedSuspectIds.has(id)}
-                                onFlip={isMobile ? () => {
-                                    const newFlipped = new Set(flippedSuspectIds);
-                                    if (newFlipped.has(id)) {
-                                        newFlipped.delete(id);
-                                    } else {
-                                        newFlipped.add(id);
-                                    }
-                                    setFlippedSuspectIds(newFlipped);
-                                    setTopCardId(id);
-                                } : undefined}
-                                onLongPress={isMobile ? () => setMenuSuspectId(id) : undefined}
-                            />
-                            {!isMobile && (
-                                <div className={styles.statementWrapper}>
-                                    <StatementCard
-                                        text={statement.text}
-                                        suspect={suspect}
-                                        isMarkedFalse={markedStatements.has(id)}
-                                        onToggle={() => handleStatementToggle(id)}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-
-                {/* Center Button */}
-                <div className={styles.centerActions}>
-                    <SubmitButton onClick={handleSubmit} />
-                </div>
-            </div>
-
-            <ResultsModal
-                result={result}
-                onNext={handleNext}
-                onRetry={() => setResult(null)}
-                onExit={onExit}
+            <GameBoard
+                gameData={gameData}
+                selectedCulprits={selectedCulprits}
+                innocentSuspects={innocentSuspects}
+                markedStatements={markedStatements}
+                flippedSuspectIds={flippedSuspectIds}
+                topCardId={topCardId}
+                isMobile={isMobile}
+                onSuspectClick={handleSuspectClick}
+                onSuspectRightClick={handleSuspectRightClick}
+                onStatementToggle={handleStatementToggle}
+                onFlip={handleFlip}
+                onLongPress={(id) => setMenuSuspectId(id)}
+                onSubmit={handleSubmit}
             />
 
-            {gameState.isCampaignComplete && (
-                <CampaignWinModal onExit={onExit} />
-            )}
+            {/* Modals are now handled by ModalContext */}
 
-            {menuSuspectId !== null && gameData && (
-                <MobileActionMenu
-                    suspect={ANIMALS[menuSuspectId]}
-                    isOpen={true}
-                    onClose={() => setMenuSuspectId(null)}
-                    onToggleCulprit={() => handleMenuAction('culprit')}
-                    onToggleInnocent={() => handleMenuAction('innocent')}
-                    onToggleLie={() => handleMenuAction('lie')}
-                    onClear={() => handleMenuAction('clear')}
-                    isCulprit={selectedCulprits.has(menuSuspectId)}
-                    isInnocent={innocentSuspects.has(menuSuspectId)}
-                    isLie={markedStatements.has(menuSuspectId)}
-                />
-            )}
+            {
+                menuSuspectId !== null && gameData && (
+                    <MobileActionMenu
+                        suspect={ANIMALS[menuSuspectId]}
+                        isOpen={true}
+                        onClose={() => setMenuSuspectId(null)}
+                        onToggleCulprit={() => handleMenuAction('culprit')}
+                        onToggleInnocent={() => handleMenuAction('innocent')}
+                        onToggleLie={() => handleMenuAction('lie')}
+                        onClear={() => handleMenuAction('clear')}
+                        isCulprit={selectedCulprits.has(menuSuspectId)}
+                        isInnocent={innocentSuspects.has(menuSuspectId)}
+                        isLie={markedStatements.has(menuSuspectId)}
+                    />
+                )
+            }
 
             <Toast
                 message={toastMessage}
                 isVisible={showToast}
                 onClose={handleToastClose}
             />
-        </div>
+
+            <GameFooter
+                onEndCase={handleEndCase}
+                onHint={handleHint}
+                stars={stars}
+            />
+        </div >
     );
 };
 

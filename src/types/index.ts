@@ -69,5 +69,5 @@ export interface Result {
     stars?: number;
     time?: string;
     solution: World;
-    reason?: 'timeout' | 'incorrect' | 'stars';
+    reason?: 'timeout' | 'incorrect' | 'stars' | 'given_up';
 }

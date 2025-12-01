@@ -1,8 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React from 'react';
 import styles from './SuspectCard.module.css';
 import { Animal } from '../types';
-
 import StatementCard from './StatementCard';
+import { useLongPress } from '../hooks/useLongPress';
 
 interface SuspectCardProps {
     suspect: Animal;
@@ -29,32 +29,7 @@ const SuspectCard: React.FC<SuspectCardProps> = ({
     onFlip,
     onLongPress
 }) => {
-    // Long Press Logic
-    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-    const isLongPress = useRef(false);
-
-    const startPress = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-        if (onLongPress) {
-            isLongPress.current = false;
-            longPressTimer.current = setTimeout(() => {
-                isLongPress.current = true;
-                onLongPress();
-            }, 500); // 500ms for long press
-        }
-    }, [onLongPress]);
-
-    const cancelPress = useCallback(() => {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-        }
-    }, []);
-
-    const handleClick = (e: React.MouseEvent) => {
-        if (isLongPress.current) {
-            return; // Ignore click if long press triggered
-        }
-
+    const handleCardClick = () => {
         if (onFlip) {
             onFlip();
         } else {
@@ -62,18 +37,29 @@ const SuspectCard: React.FC<SuspectCardProps> = ({
         }
     };
 
+    const longPressHandlers = useLongPress({
+        onLongPress: onLongPress || (() => { }),
+        onClick: handleCardClick,
+        delay: 500
+    });
+
+    // If no onLongPress is provided, we still want click handling, but useLongPress handles both.
+    // However, if onLongPress is undefined, the hook will still fire onClick.
+    // We need to be careful about mixing onFlip/onClick logic.
+
+    // Actually, the hook handles the distinction between click and long press.
+    // If onLongPress is not provided, we might want standard click behavior without the delay check?
+    // But for consistency on mobile, maybe always use it if onLongPress *could* be passed.
+    // In this game, onLongPress is passed when isMobile is true.
+
+    const handlers = onLongPress ? longPressHandlers : { onClick: handleCardClick };
+
     return (
         <div
             className={`${styles.card} ${isFlipped ? styles.flipped : ''} ${styles[state]}`}
-            onClick={handleClick}
             onContextMenu={onContextMenu}
-            onMouseDown={startPress}
-            onMouseUp={cancelPress}
-            onMouseLeave={cancelPress}
-            onTouchStart={startPress}
-            onTouchEnd={cancelPress}
-            onTouchCancel={cancelPress}
             style={{ '--suspect-color': suspect.color } as React.CSSProperties}
+            {...handlers}
         >
             <div className={styles.cardInner}>
                 {/* Front Face */}
@@ -101,7 +87,9 @@ const SuspectCard: React.FC<SuspectCardProps> = ({
                     className={styles.cardBack}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (isLongPress.current) return;
+                        // If it's a long press on the back, we probably don't want to trigger menu?
+                        // But the main card handler handles long press.
+                        // Here we just want to flip back if clicked.
                         if (onFlip) onFlip();
                     }}
                 >

@@ -1,0 +1,31 @@
+.circleContainer {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.suspectWrapper {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.5s ease-out;
+}
+
+.statementWrapper {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 10px;
+    z-index: 20;
+}
+
+.centerActions {
+    position: absolute;
+    overflow: hidden;
+}

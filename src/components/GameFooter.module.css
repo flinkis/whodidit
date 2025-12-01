@@ -1,0 +1,65 @@
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    z-index: 1000;
+    pointer-events: none;
+    /* Let clicks pass through empty space */
+}
+
+.footerButton {
+    pointer-events: auto;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s;
+    text-transform: uppercase;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.footerButton:active {
+    transform: scale(0.95);
+}
+
+.footerButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+.endCaseButton {
+    background-color: #ff4444;
+    color: white;
+    border: 2px solid #cc0000;
+}
+
+.endCaseButton:hover {
+    background-color: #ff6666;
+}
+
+.hintButton {
+    background-color: #ffbb33;
+    color: black;
+    border: 2px solid #ff8800;
+}
+
+.hintButton:hover {
+    background-color: #ffcc66;
+}
+
+@media (max-width: 768px) {
+    .footerButton {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+}

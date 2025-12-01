@@ -1,6 +1,8 @@
 import { GameProvider, useGame } from './context/GameContext'
+import { ModalProvider } from './context/ModalContext'
 import MenuScreen from './components/MenuScreen'
 import GameScreen from './components/GameScreen'
+import ModalRoot from './components/ModalRoot'
 import './App.css'
 
 const AppContent = () => {
@@ -15,6 +17,7 @@ const AppContent = () => {
                     onExit={exitToMenu}
                 />
             )}
+            <ModalRoot />
         </div>
     );
 };
@@ -22,7 +25,9 @@ const AppContent = () => {
 function App() {
     return (
         <GameProvider>
-            <AppContent />
+            <ModalProvider>
+                <AppContent />
+            </ModalProvider>
         </GameProvider>
     )
 }
